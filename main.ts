@@ -9,7 +9,7 @@
 // is /output. Local run:
 //   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
@@ -34,6 +34,20 @@ if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
 const record = parsed as Record<string, unknown>;
 if (typeof record.url !== 'string' || record.url.length === 0) {
   fail('POST.json must name the post address in its "url" field');
+}
+if (!/^https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/\d+$/.test(record.url)) {
+  fail(`POST.json "url" must be an X status address (https://x.com/<handle>/status/<id>), got: ${record.url}`);
+}
+
+const memePath = join(BOT_DIR, 'meme.png');
+let memeSize = 0;
+try {
+  memeSize = statSync(memePath).size;
+} catch (err) {
+  fail(`cannot find the meme image ${memePath}: ${(err as Error).message}`);
+}
+if (memeSize === 0) {
+  fail(`meme image ${memePath} is empty`);
 }
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
